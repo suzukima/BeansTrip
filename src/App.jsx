@@ -433,14 +433,14 @@ function CoffeeBeanJournal({ user, onLogout }) {
                 <option value="">購入店：すべて</option>
                 {usedShops.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-              <button onClick={() => setFilterDecaf(v => !v)} className="text-xs px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors" style={{ background: filterDecaf ? "#94D1CA" : "#FFFFFF", color: filterDecaf ? "#FFFFFF" : "#65483C", border: "1px solid #94D1CA" }}>
-                <Leaf size={12} /> デカフェ
+              <button onClick={() => setFilterDecaf(v => !v)} className="text-base px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors" style={{ background: filterDecaf ? "#94D1CA" : "#FFFFFF", color: filterDecaf ? "#FFFFFF" : "#65483C", border: "1px solid #94D1CA" }}>
+                <Leaf size={16} /> デカフェ
               </button>
-              <button onClick={() => setFilterFavorite(v => !v)} className="text-xs px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors" style={{ background: filterFavorite ? "#FFC107" : "#FFFFFF", color: filterFavorite ? "#FFFFFF" : "#65483C", border: filterFavorite ? "1px solid #FFC107" : "1px solid #94D1CA" }}>
-                <Star size={12} fill={filterFavorite ? "#FFFFFF" : "none"} /> お気に入り
+              <button onClick={() => setFilterFavorite(v => !v)} className="text-base px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors" style={{ background: filterFavorite ? "#FFC107" : "#FFFFFF", color: filterFavorite ? "#FFFFFF" : "#65483C", border: filterFavorite ? "1px solid #FFC107" : "1px solid #94D1CA" }}>
+                <Star size={16} fill={filterFavorite ? "#FFFFFF" : "none"} /> お気に入り
               </button>
               {(filterCountry || filterRoast || filterShop || filterFavorite || filterDecaf) && (
-                <button onClick={() => { setFilterCountry(""); setFilterRoast(""); setFilterShop(""); setFilterFavorite(false); setFilterDecaf(false); }} className="text-xs px-3 py-1.5" style={{ color: "#8D7A6B" }}>クリア</button>
+                <button onClick={() => { setFilterCountry(""); setFilterRoast(""); setFilterShop(""); setFilterFavorite(false); setFilterDecaf(false); }} className="text-base px-3 py-1.5" style={{ color: "#8D7A6B" }}>クリア</button>
               )}
             </div>
 
