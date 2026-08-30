@@ -28,6 +28,7 @@ const COUNTRIES = [
   { region: "その他", items: [["USA", "🇺🇸 アメリカ（ハワイ）"]] },
 ];
 const COUNTRY_NAME = Object.fromEntries(COUNTRIES.flatMap(r => r.items));
+const COUNTRY_REGION = Object.fromEntries(COUNTRIES.flatMap(r => r.items.map(([code]) => [code, r.region])));
 
 const ROASTS = [
   { id: "light", label: "浅煎り", color: "#D3C7BD" },
@@ -84,6 +85,26 @@ const emptyBean = () => ({
   isFavorite: false,
 });
 
+/* --- D3 ドーナツチャートコンポーネント --- */
+function DonutChart({ data, size = 120 }) {
+  if (!data || data.length === 0) return <div style={{ width: size, height: size, background: "#F4F9F8", color: "#B3A295" }} className="rounded-full flex items-center justify-center text-xs">データなし</div>;
+  
+  const radius = size / 2;
+  const pie = d3.pie().value(d => d.value).sort(null);
+  const arc = d3.arc().innerRadius(radius * 0.55).outerRadius(radius);
+  const arcs = pie(data);
+
+  return (
+    <svg width={size} height={size} className="overflow-visible">
+      <g transform={`translate(${radius},${radius})`}>
+        {arcs.map((a, i) => (
+          <path key={i} d={arc(a)} fill={data[i].color} stroke="#FFFFFF" strokeWidth="2" className="transition-all duration-300 hover:opacity-80" />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
@@ -123,7 +144,7 @@ function CoffeeBeanJournal({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [tab, setTab] = useState("map");
+  const [tab, setTab] = useState("map"); // map, list, stats
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyBean());
   const [detail, setDetail] = useState(null);
@@ -200,6 +221,43 @@ function CoffeeBeanJournal({ user, onLogout }) {
       .sort((a, b) => (b.purchaseDate || "").localeCompare(a.purchaseDate || "") || (b.createdAt || 0) - (a.createdAt || 0));
   }, [beans, filterCountry, filterRoast, filterShop, filterFavorite, filterDecaf]);
 
+  /* --- 統計用の計算 --- */
+  const statYears = useMemo(() => {
+    const y = beans.map(b => (b.purchaseDate || "").substring(0, 4)).filter(Boolean);
+    return ["all", ...Array.from(new Set(y)).sort().reverse()];
+  }, [beans]);
+  const [statYear, setStatYear] = useState("all");
+
+  const statBeans = useMemo(() => {
+    if (statYear === "all") return beans;
+    return beans.filter(b => (b.purchaseDate || "").startsWith(statYear));
+  }, [beans, statYear]);
+
+  const roastPieData = useMemo(() => {
+    const counts = {};
+    statBeans.forEach(b => counts[b.roast] = (counts[b.roast] || 0) + 1);
+    return ROASTS.map(r => ({ ...r, value: counts[r.id] || 0 })).filter(d => d.value > 0);
+  }, [statBeans]);
+
+  const regionPieData = useMemo(() => {
+    const counts = {};
+    statBeans.forEach(b => {
+      const r = COUNTRY_REGION[b.countryCode] || "その他";
+      counts[r] = (counts[r] || 0) + 1;
+    });
+    const colors = { "アフリカ": "#E05A5A", "中南米・カリブ": "#FFC107", "アジア・オセアニア": "#00A7DE", "特殊": "#8D7A6B", "その他": "#B3A295" };
+    return Object.entries(counts).map(([label, value]) => ({ label, value, color: colors[label] || "#8D7A6B" })).sort((a, b) => b.value - a.value);
+  }, [statBeans]);
+
+  const decafPieData = useMemo(() => {
+    const decaf = statBeans.filter(b => b.isDecaf).length;
+    return [
+      { label: "デカフェ", value: decaf, color: "#94D1CA" },
+      { label: "通常", value: statBeans.length - decaf, color: "#D3C7BD" }
+    ].filter(d => d.value > 0);
+  }, [statBeans]);
+
+  /* --- 地図処理 --- */
   const mapDims = { w: 800, h: 500 }; 
   const projection = useMemo(() => {
     if (!geoFeatures) return null;
@@ -307,7 +365,7 @@ function CoffeeBeanJournal({ user, onLogout }) {
     <div className="w-full min-h-screen" style={{ background: "#F4F9F8", color: "#65483C", fontFamily: "'Inter', system-ui, sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .bean-scroll::-webkit-scrollbar { width: 6px; }
+        .bean-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .bean-scroll::-webkit-scrollbar-thumb { background: #94D1CA; border-radius: 4px; }
         input, select, textarea { font-family: 'Inter', system-ui, sans-serif; font-size: 16px; }
         .country-path { cursor: pointer; stroke: #FFFFFF; stroke-width: 0.75; transition: fill 0.3s ease, opacity 0.3s ease; }
@@ -331,7 +389,7 @@ function CoffeeBeanJournal({ user, onLogout }) {
       </header>
 
       <div className="max-w-3xl mx-auto px-5 flex gap-2 mb-4">
-        {[["map", "地図"], ["list", "履歴"]].map(([id, label]) => (
+        {[["map", "地図"], ["list", "履歴"], ["stats", "統計"]].map(([id, label]) => (
           <button
             key={id} onClick={() => setTab(id)}
             className="px-5 py-1.5 rounded-full text-sm font-medium transition-colors"
@@ -417,7 +475,7 @@ function CoffeeBeanJournal({ user, onLogout }) {
             
             <p className="text-xs text-right" style={{ color: "#8D7A6B" }}>全 {beans.length} 件</p>
           </div>
-        ) : (
+        ) : tab === "list" ? (
           <div>
             <div className="flex flex-wrap gap-2 mb-5">
               <select value={filterCountry} onChange={e => setFilterCountry(e.target.value)} className="text-xs px-3 py-1.5 rounded-full outline-none" style={{ background: "#FFFFFF", color: "#65483C", border: "1px solid #94D1CA" }}>
@@ -473,6 +531,76 @@ function CoffeeBeanJournal({ user, onLogout }) {
                     </button>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="flex gap-2 mb-5 overflow-x-auto bean-scroll pb-2">
+              {statYears.map(y => (
+                <button
+                  key={y}
+                  onClick={() => setStatYear(y)}
+                  className="text-sm px-4 py-2 rounded-full font-medium transition-colors whitespace-nowrap"
+                  style={{ background: statYear === y ? "#65483C" : "#FFFFFF", color: statYear === y ? "#FFFFFF" : "#65483C", border: "1px solid " + (statYear === y ? "#65483C" : "#94D1CA") }}
+                >
+                  {y === "all" ? "全期間（すべて）" : `${y}年`}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-xs mb-4" style={{ color: "#8D7A6B" }}>
+              集計対象: {statBeans.length} 件
+            </p>
+
+            {statBeans.length === 0 ? (
+              <p className="text-sm text-center py-10" style={{ color: "#8D7A6B" }}>この期間の記録はありません。</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-5 rounded-2xl shadow-sm bg-white" style={{ border: "1px solid #E8F4F2" }}>
+                  <h3 className="text-sm font-bold mb-4 text-[#65483C]">焙煎度の割合</h3>
+                  <div className="flex items-center gap-6">
+                    <DonutChart data={roastPieData} size={110} />
+                    <div className="flex flex-col gap-2 flex-1">
+                      {roastPieData.map(d => (
+                        <div key={d.label} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5 text-[#65483C]"><span className="w-3 h-3 rounded-full" style={{ background: d.color }}></span>{d.label}</div>
+                          <span className="font-bold text-[#8D7A6B]">{d.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl shadow-sm bg-white" style={{ border: "1px solid #E8F4F2" }}>
+                  <h3 className="text-sm font-bold mb-4 text-[#65483C]">生産地域の割合</h3>
+                  <div className="flex items-center gap-6">
+                    <DonutChart data={regionPieData} size={110} />
+                    <div className="flex flex-col gap-2 flex-1">
+                      {regionPieData.map(d => (
+                        <div key={d.label} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5 text-[#65483C]"><span className="w-3 h-3 rounded-full" style={{ background: d.color }}></span>{d.label}</div>
+                          <span className="font-bold text-[#8D7A6B]">{d.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl shadow-sm bg-white" style={{ border: "1px solid #E8F4F2" }}>
+                  <h3 className="text-sm font-bold mb-4 text-[#65483C]">デカフェの割合</h3>
+                  <div className="flex items-center gap-6">
+                    <DonutChart data={decafPieData} size={110} />
+                    <div className="flex flex-col gap-2 flex-1">
+                      {decafPieData.map(d => (
+                        <div key={d.label} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5 text-[#65483C]"><span className="w-3 h-3 rounded-full" style={{ background: d.color }}></span>{d.label}</div>
+                          <span className="font-bold text-[#8D7A6B]">{d.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -537,7 +665,7 @@ function CoffeeBeanJournal({ user, onLogout }) {
               </div>
               
               <label className="block w-full h-40 rounded-xl mb-5 flex flex-col items-center justify-center overflow-hidden cursor-pointer bg-[#F4F9F8] hover:bg-[#E8F4F2] transition-colors" style={{ border: "2px dashed #94D1CA" }}>
-                {form.imageUrl ? <img src={form.imageUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-sm font-medium" style={{ color: "#00A7DE" }}>+ 写真を追加</span>}
+                {form.imageUrl ? <img src={form.imageUrl} alt="" className="w-full h-full object-contain bg-[#F4F9F8]" /> : <span className="text-sm font-medium" style={{ color: "#00A7DE" }}>+ 写真を追加</span>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
               </label>
 
