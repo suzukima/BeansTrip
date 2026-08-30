@@ -7,25 +7,25 @@ import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 
 /* --- 静的データ --- */
 const COUNTRIES = [
-  { region: "特殊", items: [["BLEND", "ブレンド（複数国）"]] },
+  { region: "特殊", items: [["BLEND", "🌍 ブレンド（複数国）"]] },
   { region: "アフリカ", items: [
-    ["ETH", "エチオピア"], ["KEN", "ケニア"], ["RWA", "ルワンダ"], ["BDI", "ブルンジ"],
-    ["TZA", "タンザニア"], ["UGA", "ウガンダ"], ["COD", "コンゴ民主共和国"], ["ZMB", "ザンビア"],
-    ["MWI", "マラウイ"], ["CIV", "コートジボワール"], ["AGO", "アンゴラ"], ["STP", "サントメ・プリンシペ"],
-    ["MDG", "マダガスカル"], ["YEM", "イエメン"],
+    ["ETH", "🇪🇹 エチオピア"], ["KEN", "🇰🇪 ケニア"], ["RWA", "🇷🇼 ルワンダ"], ["BDI", "🇧🇮 ブルンジ"],
+    ["TZA", "🇹🇿 タンザニア"], ["UGA", "🇺🇬 ウガンダ"], ["COD", "🇨🇩 コンゴ民主共和国"], ["ZMB", "🇿🇲 ザンビア"],
+    ["MWI", "🇲🇼 マラウイ"], ["CIV", "🇨🇮 コートジボワール"], ["AGO", "🇦🇴 アンゴラ"], ["STP", "🇸🇹 サントメ・プリンシペ"],
+    ["MDG", "🇲🇬 マダガスカル"], ["YEM", "🇾🇪 イエメン"],
   ]},
   { region: "中南米・カリブ", items: [
-    ["COL", "コロンビア"], ["BRA", "ブラジル"], ["PER", "ペルー"], ["BOL", "ボリビア"],
-    ["ECU", "エクアドル"], ["GTM", "グアテマラ"], ["HND", "ホンジュラス"], ["SLV", "エルサルバドル"],
-    ["NIC", "ニカラグア"], ["CRI", "コスタリカ"], ["PAN", "パナマ"], ["MEX", "メキシコ"],
-    ["JAM", "ジャマイカ"], ["CUB", "キューバ"], ["DOM", "ドミニカ共和国"], ["HTI", "ハイチ"], ["VEN", "ベネズエラ"],
+    ["COL", "🇨🇴 コロンビア"], ["BRA", "🇧🇷 ブラジル"], ["PER", "🇵🇪 ペルー"], ["BOL", "🇧🇴 ボリビア"],
+    ["ECU", "🇪🇨 エクアドル"], ["GTM", "🇬🇹 グアテマラ"], ["HND", "🇭🇳 ホンジュラス"], ["SLV", "🇸🇻 エルサルバドル"],
+    ["NIC", "🇳🇮 ニカラグア"], ["CRI", "🇨🇷 コスタリカ"], ["PAN", "🇵🇦 パナマ"], ["MEX", "🇲🇽 メキシコ"],
+    ["JAM", "🇯🇲 ジャマイカ"], ["CUB", "🇨🇺 キューバ"], ["DOM", "🇩🇴 ドミニカ共和国"], ["HTI", "🇭🇹 ハイチ"], ["VEN", "🇻🇪 ベネズエラ"],
   ]},
   { region: "アジア・オセアニア", items: [
-    ["IDN", "インドネシア"], ["VNM", "ベトナム"], ["IND", "インド"], ["CHN", "中国"],
-    ["PNG", "パプアニューギニア"], ["THA", "タイ"], ["MMR", "ミャンマー"], ["LAO", "ラオス"],
-    ["PHL", "フィリピン"], ["TLS", "東ティモール"], ["NPL", "ネパール"],
+    ["IDN", "🇮🇩 インドネシア"], ["VNM", "🇻🇳 ベトナム"], ["IND", "🇮🇳 インド"], ["CHN", "🇨🇳 中国"],
+    ["PNG", "🇵🇬 パプアニューギニア"], ["THA", "🇹🇭 タイ"], ["MMR", "🇲🇲 ミャンマー"], ["LAO", "🇱🇦 ラオス"],
+    ["PHL", "🇵🇭 フィリピン"], ["TLS", "🇹🇱 東ティモール"], ["NPL", "🇳🇵 ネパール"],
   ]},
-  { region: "その他", items: [["USA", "アメリカ（ハワイ）"]] },
+  { region: "その他", items: [["USA", "🇺🇸 アメリカ（ハワイ）"]] },
 ];
 const COUNTRY_NAME = Object.fromEntries(COUNTRIES.flatMap(r => r.items));
 
@@ -549,7 +549,10 @@ function CoffeeBeanJournal({ user, onLogout }) {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: "#8D7A6B" }}>購入店</p>
-                  <input value={form.shop} onChange={e => setForm(f => ({ ...f, shop: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none focus:border-[#00A7DE]" style={{ background: "#FFFFFF", color: "#65483C", border: "1px solid #94D1CA" }} />
+                  <input list="shop-list" value={form.shop} onChange={e => setForm(f => ({ ...f, shop: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none focus:border-[#00A7DE]" style={{ background: "#FFFFFF", color: "#65483C", border: "1px solid #94D1CA" }} />
+                  <datalist id="shop-list">
+                    {usedShops.map(s => <option key={s} value={s} />)}
+                  </datalist>
                 </div>
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: "#8D7A6B" }}>購入日</p>
